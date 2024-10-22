@@ -160,7 +160,7 @@ def _format_bitweights(bitweights):
     return [bitweights]
 
 
-def get_clustering_positions_weights(catalog, distance, zlim=(0., np.inf),maglim=None, weight_type='default', name='data', return_mask=False, option=None):
+def get_clustering_positions_weights(catalog, distance, zlim=(0., np.inf),maglim=None, weight_type='default', name='data', return_mask=False, option=None, P0=None):
     if maglim is None:
         mask = (catalog['Z'] >= zlim[0]) & (catalog['Z'] < zlim[1])
     if maglim is not None:
@@ -258,6 +258,11 @@ def get_clustering_positions_weights(catalog, distance, zlim=(0., np.inf),maglim
     if 'FKP' in weight_type:
         weights *= catalog['WEIGHT_FKP'][mask]
         print('multiplying weights by WEIGHT_FKP')
+    #CGQ MOD START> (test P0 value in FKP weights, currently no n(z) is beeing paased)
+    if 'testP0' in weight_type:
+        weights *= 1.0/(1.0+P0*catalog['NX'][mask])
+        print('multiplying weights by WEIGHT_FKP with customized P0 value')
+    #CGQ MOD END<
         
     if name == 'data' and 'bitwise' in weight_type:
         if 'default' in weight_type:
@@ -369,9 +374,9 @@ def read_clustering_positions_weights(distance, zlim =(0., np.inf), maglim=None,
                                     tab.remove_column('Z')
                                 tab.rename_column('RSDZ', 'Z')    
                         return tab
-                    positions_weights = [get_clustering_positions_weights(_get_tab(cat_fn), distance, zlim=zlim, maglim=maglim, weight_type=weight_type, name=name, option=option) for cat_fn in cat_fns]
+                    positions_weights = [get_clustering_positions_weights(_get_tab(cat_fn), distance, zlim=zlim, maglim=maglim, weight_type=weight_type, name=name, option=option, P0=kwargs['P0']) for cat_fn in cat_fns]
                 else:
-                    positions_weights = [get_clustering_positions_weights(Table.read(cat_fn), distance, zlim=zlim, maglim=maglim, weight_type=weight_type, name=name, option=option) for cat_fn in cat_fns]
+                    positions_weights = [get_clustering_positions_weights(Table.read(cat_fn), distance, zlim=zlim, maglim=maglim, weight_type=weight_type, name=name, option=option, P0=kwargs['P0']) for cat_fn in cat_fns]
                 
                 if isscalar:
                     positions.append(positions_weights[0][0])
@@ -397,7 +402,7 @@ def read_clustering_positions_weights(distance, zlim =(0., np.inf), maglim=None,
                     cat_read = ran_cat
                    
                     
-                positions_weights = [get_clustering_positions_weights(cat_read, distance, zlim=zlim, maglim=maglim, weight_type=weight_type, name=name, option=option)]
+                positions_weights = [get_clustering_positions_weights(cat_read, distance, zlim=zlim, maglim=maglim, weight_type=weight_type, name=name, option=option, P0=kwargs['P0'])]
                 if name == 'data':
                     positions.append(positions_weights[0][0])
                     weights.append(positions_weights[0][1])
